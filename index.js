@@ -28,7 +28,8 @@ const htmlAttrs = {
         table: 'table',
         th: 'table-header-cell',
         tr: 'table-row',
-        td: 'table-cell'
+        td: 'table-cell',
+        div: 'paragraph',
     },
     text: 'text',
 };
@@ -49,17 +50,22 @@ const transformDom = (dom) => {
         //console.log(elm);
         let content = [];
         let newData = {};
+
         if (children) {
             content = transformDom(children);
         }
 
         if (type === 'text') {
+          if (data.trim() !== '') {
             newData = {
                 data: {},
                 marks: [],
                 value: data,
                 nodeType: type,
             };
+          } else {
+            newData = null;  // Collapse whitespace lines
+          }
         } else if (type === 'tag') {
             switch(name) {
                 case 'span':
@@ -76,44 +82,9 @@ const transformDom = (dom) => {
                         return node;
                     }, content);
                     break;
-                case 'img':
-                    const fileName = R.last(R.split('/', attribs.src));
 
-                    newData = {
-                        data: {
-                            target: {
-                                sys: {
-                                    space: {},
-                                    type: 'Asset',
-                                    createdAt: '',
-                                    updatedAt: '',
-                                    environment: {},
-                                    revision: null,
-                                    locale: 'en-US',
-                                },
-                                fields: {
-                                    title: R.head(R.split('.', fileName)),
-                                    description: attribs.alt,
-                                    file: {
-                                        url: attribs.src,
-                                        details: {
-                                            size: 46234, //@TODO - don't hardcode
-                                            image: {
-                                                width: parseInt(attribs.width, 10),
-                                                height: parseInt(attribs.height, 10),
-                                            },
-                                        },
-                                        fileName,
-                                        contentType: 'image/' + R.last(R.split('.', fileName)),
-                                    },
-                                },
-                            },
-                        },
-                        content: [],
-                        nodeType: htmlAttrs[type][name],
-                    };
-                    break
                 case 'i':
+                case 'em':
                 case 'b':
                 case 'strong':
                 case 'u':
@@ -176,8 +147,9 @@ const transformDom = (dom) => {
             console.log('***new type needed -', type, data);
         }
 
-
-        results = R.type(newData) === 'Array' ? R.concat(results, newData) : R.append(newData, results);
+        if (newData !== null) {
+          results = R.type(newData) === 'Array' ? R.concat(results, newData) : R.append(newData, results);
+        }
     }, dom);
     return results;
 };
