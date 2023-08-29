@@ -163,6 +163,12 @@ const handleFn = (error, dom) => {
         content: transformDom(dom),
         nodeType: 'document',
     };
+
+    // Make sure if top level nodes are text we wrap them in a paragraph to make
+    // the RTF valid:
+    if (transformed.content.length > 0 && transformed.content[0].nodeType === 'text') {
+        transformed.content = paragraph(transformed.content, 'paragraph');
+    }
 };
 
 const parser = new htmlParser.Parser(new htmlParser.DefaultHandler(handleFn));
